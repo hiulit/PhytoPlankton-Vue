@@ -6,21 +6,6 @@ import router from './router'
 
 Vue.config.productionTip = false
 
-// for (var i = 0; i < window.phytoplanktonConfig.menu.length; i++) {
-//   console.log(window.phytoplanktonConfig.menu[i])
-//   router.options.routes.push({
-//     path: '/' + window.phytoplanktonConfig.menu[i].url[0],
-//     name: window.phytoplanktonConfig.menu[i].title,
-//     component: PhytoplanktonPage
-//   })
-// }
-// router.options.routes.push({
-//   path: '/' + window.phytoplanktonConfig.menu[0].url[0],
-//   name: window.phytoplanktonConfig.menu[0].title,
-//   component: PhytoplanktonPage
-// })
-// console.log(router.options.routes)
-
 /* eslint-disable no-new */
 new Vue({
   el: '#app',

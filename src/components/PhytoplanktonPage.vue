@@ -5,18 +5,24 @@
 </template>
 
 <script>
+var marked = require('marked')
+import separate from '../scripts/separate'
+import removeComments from '../scripts/removeComments'
+import computeCss from '../scripts/computeCss'
+import Vue from 'vue'
+import VueResource from 'vue-resource'
+
+Vue.use(VueResource)
+
 export default {
   name: 'phytoplankton-page',
   data () {
     return {
-      url: '',
+      // url: './styleguide' + this.$route.path,
+      url: '../../static/styleguide' + this.$route.path,
+      // url: require('../styleguide/readme.css'),
       headings: [],
-      blocks: [
-        {
-          docs: 'hola',
-          css: ''
-        }
-      ]
+      blocks: []
     }
   },
   beforeCreate: function () {
@@ -27,15 +33,143 @@ export default {
   },
   mounted: function () {
     console.log('mounted')
+    // console.log(this.$el)
+    this.loadFile()
+    console.log(this.blocks)
   },
   updated: function () {
     console.log('updated')
   },
   methods: {
+    removeStyles: function () {
+      var styles = document.head.querySelectorAll('style')
+      if (styles.length) {
+        for (var i = 0; i < styles.length; i++) {
+          styles[i].parentNode.removeChild(styles[i])
+        }
+      }
+    },
+    getHeadings: function (block) {
+      var match
+      var regex = /^ *(#{1,6}) *([^\n]+?) *#* *(?:\n+|$)/gm
+      while ((match = regex.exec(block.docs)) !== null) {
+        this.headings.push(match[0])
+      }
+    },
     loadFile: function () {
       // Resets
-      this.blocks = []
-      this.headings = []
+      // this.blocks = []
+      // this.headings = []
+      // this.removeStyles()
+
+      this.$http.get(this.url).then(response => {
+        // get body data
+        var blocks = separate(response.body)
+
+        for (var i = 0; i < blocks.length; i++) {
+          var tokens = marked.lexer(blocks[i].docs)
+          var links = tokens.links || {}
+          var block = {
+            docs: [],
+            code: ''
+          }
+
+          this.getHeadings(blocks[i])
+
+          var cleanCode = removeComments(blocks[i].code)
+          if (cleanCode !== '') {
+            block.code = computeCss(cleanCode)
+          }
+
+          for (var j = 0; j < tokens.length; j++) {
+            switch (tokens[j].type) {
+              case 'code':
+                if (!tokens[j].lang) {
+                  block.docs.push(tokens[j])
+                } else if (tokens[j].lang === 'markup') {
+                  block.docs.push({
+                    type: 'html',
+                    lang: 'markup',
+                    text: '<ul class="phytoplankton-tabs">' +
+                          '<li class="phytoplankton-tabs__item is-active">HTML</li>' +
+                          '</ul>' +
+                          '<div class="code-render clearfix">' + tokens[j].text + '</div>'
+                  })
+                }
+                break
+              default:
+                block.docs.push(tokens[j])
+                break
+            }
+          }
+
+          block.docs.links = links
+          block.docs = marked.parser(block.docs)
+          this.blocks.push(block)
+        }
+      }, response => {
+        // error callback
+      })
+
+      // var rq = new XMLHttpRequest()
+
+      // rq.onreadystatechange = function (page) {
+      //   if (this.readyState === XMLHttpRequest.DONE) {
+      //     if (this.status === 200) {
+      //       var blocks = separate(this.responseText)
+
+      //       for (var i = 0; i < blocks.length; i++) {
+      //         var tokens = marked.lexer(blocks[i].docs)
+      //         var links = tokens.links || {}
+      //         var block = {
+      //           docs: [],
+      //           code: ''
+      //         }
+
+      //         page.getHeadings(blocks[i])
+
+      //         var cleanCode = removeComments(blocks[i].code)
+      //         if (cleanCode !== '') {
+      //           block.code = computeCss(cleanCode)
+      //         }
+
+      //         for (var j = 0; j < tokens.length; j++) {
+      //           switch (tokens[j].type) {
+      //             case 'code':
+      //               if (!tokens[j].lang) {
+      //                 block.docs.push(tokens[j])
+      //               } else if (tokens[j].lang === 'markup') {
+      //                 block.docs.push({
+      //                   type: 'html',
+      //                   lang: 'markup',
+      //                   text: '<ul class="phytoplankton-tabs">' +
+      //                         '<li class="phytoplankton-tabs__item is-active">HTML</li>' +
+      //                         '</ul>' +
+      //                         '<div class="code-render clearfix">' + tokens[j].text + '</div>'
+      //                 })
+      //               }
+      //               break
+      //             default:
+      //               block.docs.push(tokens[j])
+      //               break
+      //           }
+      //         }
+
+      //         block.docs.links = links
+      //         block.docs = marked.parser(block.docs)
+      //         page.blocks.push(block)
+      //       }
+      //     } else {
+      //       alert('Request Failed!\n\nEither the file the extension *(.css, .stylus, .styl, .less, .sass, .scss)* in `config.menu.url` is missing or the file just doesn\'t exist.')
+      //       // return
+      //       // loader.message = '**Request Failed!**\n\nEither the file the extension *(.css, .stylus, .styl, .less, .sass, .scss)* in `config.menu.url` is missing or the file just doesn\'t exist.';
+      //       // loader.message = marked(loader.message);
+      //     }
+      //   }
+      // }.bind(rq, this)
+
+      // rq.open('GET', this.url)
+      // rq.send()
     }
   }
 }

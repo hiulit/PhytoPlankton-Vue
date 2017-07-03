@@ -11,7 +11,7 @@ for (var i = 0; i < phytoplanktonConfig.menu.length; i++) {
   for (var j = 0; j < phytoplanktonConfig.menu[i].url.length; j++) {
     routes.push({
       path: '/' + phytoplanktonConfig.menu[i].url[j],
-      name: phytoplanktonConfig.menu[i].title,
+      name: phytoplanktonConfig.menu[i].url[j],
       component: PhytoplanktonPage
     })
   }
